@@ -6,7 +6,7 @@ The project leverages a **Hybrid Search** approach combining **Dense (Semantic) 
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Data Ingestion**: Directly fetches recent vulnerability data from the official [NVD API v2](https://services.nvd.nist.gov/rest/json/cves/2.0) and parses essential fields (CVE ID, base score, severity, published date, descriptions).
 * **Hybrid Retrieval (Dense + Sparse)**:
@@ -19,7 +19,7 @@ The project leverages a **Hybrid Search** approach combining **Dense (Semantic) 
 
 ---
 
-## 🛠️ Architecture Overview
+## Architecture Overview
 
 ```mermaid
 graph TD
@@ -35,7 +35,7 @@ graph TD
 
 ---
 
-## 📋 Setup & Installation
+## Setup & Installation
 
 ### 1. Clone the Repository
 ```bash
@@ -61,7 +61,7 @@ GROQ_API_KEY=your_actual_groq_api_key_here
 
 ---
 
-## 💻 Usage
+## Usage
 
 ### 1. Run the Full Pipeline
 Executes data fetching, in-memory database creation, hybrid query comparisons, and generates a vulnerability report using Groq:
@@ -83,7 +83,7 @@ python test_filter.py
 
 ---
 
-## ⚙️ Configuration File (`config.py`)
+## Configuration File (`config.py`)
 
 You can easily adjust the models, collection names, and parameters inside [config.py](file:///c:/Users/Lenovo/Desktop/cve-intel/config.py):
 * `GROQ_API_KEY`: Fetches the key from the environment variables.
