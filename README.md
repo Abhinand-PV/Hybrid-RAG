@@ -1,25 +1,16 @@
 # CVE Intelligence (CVE-Intel) — Hybrid RAG Search & Analysis
 
+[![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-red.svg)](https://qdrant.tech/)
+[![LLM](https://img.shields.io/badge/LLM-Groq_Llama_3.3-orange.svg)](https://groq.com/)
+
 A powerful, production-ready Hybrid RAG (Retrieval-Augmented Generation) pipeline designed to ingest, index, search, and analyze security vulnerabilities (CVEs) from the National Vulnerability Database (NVD).
 
 The project leverages a **Hybrid Search** approach combining **Dense (Semantic) Retrieval** and **Sparse (Keyword/BM25) Retrieval** with **RRF (Reciprocal Rank Fusion)** scoring, and integrates with **Groq LLM** to generate structured vulnerability reports and insights.
 
 ---
 
-## Key Features
-
-* **Data Ingestion**: Directly fetches recent vulnerability data from the official [NVD API v2](https://services.nvd.nist.gov/rest/json/cves/2.0) and parses essential fields (CVE ID, base score, severity, published date, descriptions).
-* **Hybrid Retrieval (Dense + Sparse)**:
-  * **Dense Embedding**: Employs `sentence-transformers/all-MiniLM-L6-v2` for semantic context retrieval.
-  * **Sparse Embedding**: Employs `Qdrant/bm25` (BM25) for precise keyword matching (e.g. searching specific CVE IDs or exact terms).
-  * **RRF Fusion**: Fuses results using Reciprocal Rank Fusion (RRF) for optimal ranking accuracy.
-* **Vector Database**: Built on [Qdrant](https://qdrant.tech/) (running in-memory for zero-setup execution).
-* **Metadata Filtering**: Supports real-time server-side filtering of results by vulnerability severity level (`CRITICAL`, `HIGH`, `MEDIUM`, etc.).
-* **Vulnerability Reports**: Integrated with Groq's LLM (`llama-3.3-70b-versatile`) to generate grounded, context-aware analysis of fetched vulnerabilities.
-
----
-
-## Architecture Overview
+## 🏗️ Architecture Overview
 
 ```mermaid
 graph TD
@@ -35,7 +26,20 @@ graph TD
 
 ---
 
-## Setup & Installation
+## ✨ Key Features
+
+*   **Data Ingestion**: Directly fetches recent vulnerability data from the official [NVD API v2](https://services.nvd.nist.gov/rest/json/cves/2.0) and parses essential fields (CVE ID, base score, severity, published date, descriptions).
+*   **Hybrid Retrieval (Dense + Sparse)**:
+    *   **Dense Embedding**: Employs `sentence-transformers/all-MiniLM-L6-v2` for semantic context retrieval.
+    *   **Sparse Embedding**: Employs `Qdrant/bm25` (BM25) for precise keyword matching (e.g. searching specific CVE IDs or exact terms).
+    *   **RRF Fusion**: Fuses results using Reciprocal Rank Fusion (RRF) for optimal ranking accuracy.
+*   **Vector Database**: Built on [Qdrant](https://qdrant.tech/) (running in-memory for zero-setup execution).
+*   **Metadata Filtering**: Supports real-time server-side filtering of results by vulnerability severity level (`CRITICAL`, `HIGH`, `MEDIUM`, etc.).
+*   **Vulnerability Reports**: Integrated with Groq's LLM (`llama-3.3-70b-versatile`) to generate grounded, context-aware analysis of fetched vulnerabilities.
+
+---
+
+## 🚀 Setup & Installation
 
 ### 1. Clone the Repository
 ```bash
@@ -61,32 +65,99 @@ GROQ_API_KEY=your_actual_groq_api_key_here
 
 ---
 
-## Usage
+## 💻 How to Use
 
-### 1. Run the Full Pipeline
-Executes data fetching, in-memory database creation, hybrid query comparisons, and generates a vulnerability report using Groq:
+This project offers both pre-built scripts for analysis/testing and a modular API that you can import into your own Python applications.
+
+### 1. Pre-built Executable Scripts
+
+#### Run the Full RAG Pipeline
+Executes NVD data fetching, database creation, hybrid query comparisons, and generates a vulnerability report using Groq.
 ```bash
 python main.py
 ```
+*   **What it does:**
+    1. Spins up Qdrant in-memory.
+    2. Fetches the latest 50 CVEs from the NVD API.
+    3. Indexes documents using Dense and Sparse vectors.
+    4. Compares search results across Dense-only, Sparse-only, and Hybrid (RRF) strategies.
+    5. Sends the filtered critical context to Groq to generate a final summary report.
 
-### 2. Test Ingestion Separately
+#### Test Ingestion Separately
 Fetch recent CVEs and verify that they parse correctly:
 ```bash
 python ingest.py
 ```
+*   **Expected Output Example:**
+    ```text
+    Fetching CVEs from NVD API...
+    Parsed 50 CVE documents.
 
-### 3. Test Metadata Filters
+    Sample document:
+    CVE-2024-21732: FlyCms through abbaa5a allows XSS via the permission management feature. (Severity: MEDIUM, CVSS: 6.1)
+    Metadata: {'cve_id': 'CVE-2024-21732', 'severity': 'MEDIUM', ...}
+    ```
+
+#### Test Metadata Filters
 Run a structured test showcasing how the hybrid search handles query matching combined with severity-level filters:
 ```bash
 python test_filter.py
 ```
+*   **Expected Output Example:**
+    ```text
+    Ingested 50 documents into 'cve-intel'.
+    Hybrid search WITHOUT severity filter:
+      CVE-2023-33032 - Severity: CRITICAL
+      CVE-2023-33038 - Severity: MEDIUM
+      ...
+    
+    Hybrid search WITH severity_filter='CRITICAL':
+      CVE-2023-33032 - Severity: CRITICAL
+      CVE-2023-33030 - Severity: CRITICAL
+      ...
+    ```
 
 ---
 
-## Configuration File (`config.py`)
+### 2. Programmatic Usage (API Integration)
 
-You can easily adjust the models, collection names, and parameters inside [config.py](file:///c:/Users/Lenovo/Desktop/cve-intel/config.py):
-* `GROQ_API_KEY`: Fetches the key from the environment variables.
-* `GROQ_MODEL`: Default LLM (`llama-3.3-70b-versatile`).
-* `DENSE_MODEL`: The transformer model used for semantic search.
-* `SPARSE_MODEL`: The BM25 model configuration.
+You can import and use the pipeline components in your own Python projects. Here is a simple example showing how to initialize Qdrant, ingest CVEs, and search using hybrid search with severity metadata filters:
+
+```python
+from qdrant_client import QdrantClient
+from ingest import fetch_cves, parse_cve_records
+from search import create_collection, ingest_documents, hybrid_search
+
+# 1. Initialize Qdrant Client (either in-memory or a remote instance)
+client = QdrantClient(":memory:")
+
+# 2. Fetch and parse CVE data
+raw_cves = fetch_cves(results_per_page=10)
+documents = parse_cve_records(raw_cves)
+
+# 3. Setup the collection and ingest documents
+create_collection(client)
+ingest_documents(client, documents)
+
+# 4. Perform Hybrid Search with RRF Fusion and Severity Filter
+query = "remote code execution"
+results = hybrid_search(client, query, limit=3, severity_filter="CRITICAL")
+
+# 5. Process search results
+for score_point in results:
+    payload = score_point.payload
+    print(f"[{score_point.score:.3f}] {payload['cve_id']} | Severity: {payload['severity']} | CVSS: {payload['cvss_score']}")
+    print(f"Description: {payload['description']}\n")
+```
+
+---
+
+## ⚙️ Configuration (`config.py`)
+
+You can adjust the models, collection names, and parameters inside [config.py](file:///c:/Users/Lenovo/Desktop/cve-intel/config.py):
+*   `GROQ_API_KEY`: Fetches the API key from environment variables.
+*   `GROQ_MODEL`: Default LLM (`llama-3.3-70b-versatile`).
+*   `COLLECTION_NAME`: Qdrant collection name (`cve-intel`).
+*   `DENSE_MODEL`: The transformer model used for semantic search (`sentence-transformers/all-MiniLM-L6-v2`).
+*   `SPARSE_MODEL`: The BM25 model configuration (`Qdrant/bm25`).
+*   `NVD_API_URL`: Base URL for NVD CVE v2 API.
