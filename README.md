@@ -71,14 +71,20 @@ This project offers both pre-built scripts for analysis/testing and a modular AP
 
 ### 1. Pre-built Executable Scripts
 
+#### Run the Interactive CLI (Recommended)
+Launch the beautiful interactive terminal application to perform search comparisons, severity filtering, cache management, and Groq LLM reporting:
+```bash
+python cli.py
+```
+
 #### Run the Full RAG Pipeline
 Executes NVD data fetching, database creation, hybrid query comparisons, and generates a vulnerability report using Groq.
 ```bash
 python main.py
 ```
 *   **What it does:**
-    1. Spins up Qdrant in-memory.
-    2. Fetches the latest 50 CVEs from the NVD API.
+    1. Spins up Qdrant using persistent local storage (`./qdrant_db`).
+    2. Checks if local storage has data; if not, fetches the latest 50 CVEs from the NVD API (utilizing local `cve_cache.json` caching).
     3. Indexes documents using Dense and Sparse vectors.
     4. Compares search results across Dense-only, Sparse-only, and Hybrid (RRF) strategies.
     5. Sends the filtered critical context to Groq to generate a final summary report.
@@ -161,3 +167,6 @@ You can adjust the models, collection names, and parameters inside [config.py](f
 *   `DENSE_MODEL`: The transformer model used for semantic search (`sentence-transformers/all-MiniLM-L6-v2`).
 *   `SPARSE_MODEL`: The BM25 model configuration (`Qdrant/bm25`).
 *   `NVD_API_URL`: Base URL for NVD CVE v2 API.
+*   `CVE_CACHE_FILE`: Name of the JSON cache file for raw NVD API data (`cve_cache.json`).
+*   `CACHE_EXPIRY_HOURS`: Cache expiration time in hours (`24`).
+*   `QDRANT_PATH`: Local storage folder path for Qdrant persistence (`./qdrant_db`).
