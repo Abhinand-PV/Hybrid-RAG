@@ -1,18 +1,74 @@
+import os
+import json
+from datetime import datetime, timedelta
 import requests
 import time
-from config import NVD_API_URL
+from config import NVD_API_URL, CVE_CACHE_FILE, CACHE_EXPIRY_HOURS
 
 
-def fetch_cves(results_per_page=50):
-    """Fetch recent CVEs from the NVD API."""
+def fetch_cves(results_per_page=50, force_refresh=False, days=90):
+    """Fetch recent CVEs from the NVD API with local caching."""
+    # Check cache first
+    cache_exists = os.path.exists(CVE_CACHE_FILE)
+    if cache_exists and not force_refresh:
+        try:
+            with open(CVE_CACHE_FILE, "r") as f:
+                cache_data = json.load(f)
+            
+            timestamp = cache_data.get("timestamp", 0)
+            cached_params = cache_data.get("params", {})
+            
+            # Check if cache is still fresh and parameters match
+            cache_age = (time.time() - timestamp) / 3600.0
+            if cache_age < CACHE_EXPIRY_HOURS and cached_params.get("resultsPerPage") == results_per_page:
+                print(f"Loading CVEs from local cache (cached {cache_age:.1f} hours ago)...")
+                return cache_data["data"]
+        except Exception as e:
+            print(f"Warning: Failed to read cache file ({e}). Re-fetching...")
+
+    # Calculate dynamic dates (UTC)
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=days)
+    
     params = {
         "resultsPerPage": results_per_page,
-        "pubStartDate": "2024-01-01T00:00:00.000Z",
-        "pubEndDate": "2024-04-29T23:59:59.999Z",
+        "pubStartDate": start_date.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "pubEndDate": end_date.strftime("%Y-%m-%dT%H:%M:%S.999Z"),
     }
-    response = requests.get(NVD_API_URL, params=params)
-    response.raise_for_status()
-    return response.json()
+    
+    print(f"Fetching from NVD API ({start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')})...")
+    
+    try:
+        response = requests.get(NVD_API_URL, params=params, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Save to cache
+        try:
+            with open(CVE_CACHE_FILE, "w") as f:
+                json.dump({
+                    "timestamp": time.time(),
+                    "params": params,
+                    "data": data
+                }, f, indent=2)
+            print("Successfully cached fetched CVEs.")
+        except Exception as e:
+            print(f"Warning: Failed to write cache file ({e}).")
+            
+        return data
+        
+    except Exception as e:
+        print(f"Error fetching from NVD API: {e}")
+        if cache_exists:
+            print("Using expired local cache as fallback...")
+            try:
+                with open(CVE_CACHE_FILE, "r") as f:
+                    cache_data = json.load(f)
+                return cache_data["data"]
+            except Exception as cache_err:
+                print(f"Critical error: Failed to read fallback cache ({cache_err}).")
+        raise e
+
 
 def parse_cve_records(raw_data):
     """Parse NVD API response into documents with metadata."""

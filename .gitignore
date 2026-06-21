@@ -1,3 +1,5 @@
 .env
 __pycache__/
 *.pyc
+cve_cache.json
+qdrant_db/
