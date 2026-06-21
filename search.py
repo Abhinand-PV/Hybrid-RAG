@@ -2,8 +2,19 @@ from qdrant_client import QdrantClient, models
 from config import COLLECTION_NAME, DENSE_MODEL, SPARSE_MODEL
 
 
-def create_collection(client):
-    """Create a Qdrant collection with both dense and sparse vectors."""
+def create_collection(client, force_recreate=False):
+    """Create a Qdrant collection with both dense and sparse vectors if it doesn't exist."""
+    if force_recreate:
+        try:
+            client.delete_collection(collection_name=COLLECTION_NAME)
+            print(f"Deleted existing collection '{COLLECTION_NAME}' for clean recreation.")
+        except Exception as e:
+            print(f"Note: Could not delete collection '{COLLECTION_NAME}' (it may not exist): {e}")
+
+    if client.collection_exists(collection_name=COLLECTION_NAME):
+        print(f"Collection '{COLLECTION_NAME}' already exists. Skipping creation.")
+        return False
+
     client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config={
@@ -18,6 +29,8 @@ def create_collection(client):
             ),
         },
     )
+    print(f"Created collection '{COLLECTION_NAME}' successfully.")
+    return True
 
 def ingest_documents(client, documents):
     """Ingest documents with both dense and sparse vectors."""

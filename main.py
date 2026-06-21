@@ -1,6 +1,6 @@
 from qdrant_client import QdrantClient
 from groq import Groq
-from config import GROQ_API_KEY, GROQ_MODEL, COLLECTION_NAME
+from config import GROQ_API_KEY, GROQ_MODEL, COLLECTION_NAME, QDRANT_PATH
 from ingest import fetch_cves, parse_cve_records
 from search import create_collection, ingest_documents, dense_search, sparse_search, hybrid_search
 
@@ -64,21 +64,47 @@ def generate_answer(groq_client, query, context_docs):
     return response.choices[0].message.content
 
 def main():
-    print("Initializing Qdrant (in-memory)...")
-    client = QdrantClient(":memory:")
+    print(f"Initializing Qdrant (persistent at {QDRANT_PATH})...")
+    client = QdrantClient(path=QDRANT_PATH)
 
-    print("Fetching CVE data from NVD...")
-    raw_data = fetch_cves(50)
-    documents = parse_cve_records(raw_data)
-    print(f"Loaded {len(documents)} CVE records.")
+    collection_exists = client.collection_exists(collection_name=COLLECTION_NAME)
+    has_points = False
+    if collection_exists:
+        try:
+            info = client.get_collection(collection_name=COLLECTION_NAME)
+            has_points = info.points_count > 0
+        except Exception:
+            pass
 
-    print("Creating hybrid collection and ingesting documents...")
-    create_collection(client)
-    ingest_documents(client, documents)
+    if not collection_exists or not has_points:
+        print("Collection is empty or does not exist. Fetching and ingesting CVE data...")
+        raw_data = fetch_cves(50)
+        documents = parse_cve_records(raw_data)
+        print(f"Loaded {len(documents)} CVE records.")
+        
+        print("Creating hybrid collection and ingesting documents...")
+        create_collection(client, force_recreate=True)
+        ingest_documents(client, documents)
+        sample_cve_id = documents[0]["metadata"]["cve_id"]
+    else:
+        print(f"Collection '{COLLECTION_NAME}' already populated. Skipping ingestion.")
+        # Scroll to fetch a sample CVE ID for testing query
+        sample_cve_id = "CVE-2026-28809"  # fallback default
+        try:
+            scroll_results = client.scroll(
+                collection_name=COLLECTION_NAME,
+                limit=1,
+                with_payload=True,
+                with_vectors=False
+            )
+            if scroll_results and scroll_results[0]:
+                sample_cve_id = scroll_results[0][0].payload.get("cve_id", sample_cve_id)
+        except Exception as e:
+            print(f"Note: Could not scroll collection to fetch sample CVE: {e}")
 
     # Test with three query types: exact ID, semantic, and technical
     test_queries = [
-        documents[0]["metadata"]["cve_id"],
+        sample_cve_id,
         "remote code execution in web servers",
         "memory corruption buffer overflow vulnerability",
     ]
