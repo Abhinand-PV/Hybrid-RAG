@@ -77,6 +77,29 @@ def perform_search(client):
         default="ALL"
     )
     
+    min_cvss = Prompt.ask(
+        "Filter by Minimum CVSS Score (0.0 to 10.0)",
+        default="0.0"
+    )
+    try:
+        min_cvss = float(min_cvss)
+        if not (0.0 <= min_cvss <= 10.0):
+            min_cvss = 0.0
+    except ValueError:
+        min_cvss = 0.0
+        
+    score_threshold = Prompt.ask(
+        "Score threshold filter (e.g. 0.01 for RRF hybrid, or leave empty)",
+        default=""
+    )
+    if score_threshold.strip():
+        try:
+            score_threshold = float(score_threshold)
+        except ValueError:
+            score_threshold = None
+    else:
+        score_threshold = None
+
     limit = Prompt.ask("Max results to display", default="5")
     try:
         limit = int(limit)
@@ -88,18 +111,27 @@ def perform_search(client):
     # Perform Search
     with console.status(f"[bold green]Searching using {strategy} strategy...[/bold green]"):
         if strategy == "dense":
-            results = dense_search(client, query, limit=limit)
+            results = dense_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold)
         elif strategy == "sparse":
-            results = sparse_search(client, query, limit=limit)
+            results = sparse_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold)
         else:
-            results = hybrid_search(client, query, limit=limit, severity_filter=severity_filter)
+            results = hybrid_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold)
             
     if not results:
         console.print("[yellow]No matching vulnerability records found.[/yellow]")
         return
         
     # Render Results Table
-    table = Table(title=f"Search Results for: '{query}' (Strategy: {strategy}, Severity: {severity})", expand=True)
+    title_str = f"Search Results for: '{query}' (Strategy: {strategy}"
+    if severity_filter:
+        title_str += f", Severity: {severity_filter}"
+    if min_cvss > 0.0:
+        title_str += f", Min CVSS: {min_cvss:.1f}"
+    if score_threshold is not None:
+        title_str += f", Min Score: {score_threshold}"
+    title_str += ")"
+    
+    table = Table(title=title_str, expand=True)
     table.add_column("Score", justify="right", style="cyan", no_wrap=True)
     table.add_column("CVE ID", style="bold green", no_wrap=True)
     table.add_column("Severity", style="bold", no_wrap=True)
