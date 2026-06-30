@@ -34,7 +34,7 @@ graph TD
     *   **Sparse Embedding**: Employs `Qdrant/bm25` (BM25) for precise keyword matching (e.g. searching specific CVE IDs or exact terms).
     *   **RRF Fusion**: Fuses results using Reciprocal Rank Fusion (RRF) for optimal ranking accuracy.
 *   **Vector Database**: Built on [Qdrant](https://qdrant.tech/) (running in-memory for zero-setup execution).
-*   **Metadata Filtering**: Supports real-time server-side filtering of results by vulnerability severity level (`CRITICAL`, `HIGH`, `MEDIUM`, etc.).
+*   **Metadata & Score Filtering**: Supports real-time server-side filtering of results by vulnerability severity level (`CRITICAL`, `HIGH`, `MEDIUM`, etc.), minimum CVSS scores (e.g. `>= 7.0`), and custom score thresholds.
 *   **Vulnerability Reports**: Integrated with Groq's LLM (`llama-3.3-70b-versatile`) to generate grounded, context-aware analysis of fetched vulnerabilities.
 
 ---
@@ -145,9 +145,9 @@ documents = parse_cve_records(raw_cves)
 create_collection(client)
 ingest_documents(client, documents)
 
-# 4. Perform Hybrid Search with RRF Fusion and Severity Filter
+# 4. Perform Hybrid Search with RRF Fusion, Severity Filter, Min CVSS, and Score Threshold
 query = "remote code execution"
-results = hybrid_search(client, query, limit=3, severity_filter="CRITICAL")
+results = hybrid_search(client, query, limit=3, severity_filter="CRITICAL", min_cvss=7.0, score_threshold=0.01)
 
 # 5. Process search results
 for score_point in results:
