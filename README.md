@@ -28,13 +28,13 @@ graph TD
 
 ## ✨ Key Features
 
-*   **Data Ingestion**: Directly fetches recent vulnerability data from the official [NVD API v2](https://services.nvd.nist.gov/rest/json/cves/2.0) and parses essential fields (CVE ID, base score, severity, published date, descriptions).
+*   **Data Ingestion**: Directly fetches recent vulnerability data from the official [NVD API v2](https://services.nvd.nist.gov/rest/json/cves/2.0) and parses essential fields (CVE ID, base score, severity, published date, descriptions). Supports batch-based ingestion to safely load large quantities of documents.
 *   **Hybrid Retrieval (Dense + Sparse)**:
     *   **Dense Embedding**: Employs `sentence-transformers/all-MiniLM-L6-v2` for semantic context retrieval.
     *   **Sparse Embedding**: Employs `Qdrant/bm25` (BM25) for precise keyword matching (e.g. searching specific CVE IDs or exact terms).
     *   **RRF Fusion**: Fuses results using Reciprocal Rank Fusion (RRF) for optimal ranking accuracy.
 *   **Vector Database**: Built on [Qdrant](https://qdrant.tech/) (running in-memory for zero-setup execution).
-*   **Metadata & Score Filtering**: Supports real-time server-side filtering of results by vulnerability severity level (`CRITICAL`, `HIGH`, `MEDIUM`, etc.), minimum CVSS scores (e.g. `>= 7.0`), and custom score thresholds.
+*   **Metadata, Date & Score Filtering**: Supports real-time server-side filtering of results by vulnerability severity level (`CRITICAL`, `HIGH`, `MEDIUM`, etc.), minimum CVSS scores (e.g. `>= 7.0`), custom score thresholds, and published date ranges (`start_date` and `end_date`).
 *   **Vulnerability Reports**: Integrated with Groq's LLM (`llama-3.3-70b-versatile`) to generate grounded, context-aware analysis of fetched vulnerabilities.
 
 ---
@@ -141,18 +141,27 @@ client = QdrantClient(":memory:")
 raw_cves = fetch_cves(results_per_page=10)
 documents = parse_cve_records(raw_cves)
 
-# 3. Setup the collection and ingest documents
+# 3. Setup the collection and ingest documents in batches of 50
 create_collection(client)
-ingest_documents(client, documents)
+ingest_documents(client, documents, batch_size=50)
 
-# 4. Perform Hybrid Search with RRF Fusion, Severity Filter, Min CVSS, and Score Threshold
+# 4. Perform Hybrid Search with RRF Fusion, Severity Filter, Min CVSS, Date Range, and Score Threshold
 query = "remote code execution"
-results = hybrid_search(client, query, limit=3, severity_filter="CRITICAL", min_cvss=7.0, score_threshold=0.01)
+results = hybrid_search(
+    client, 
+    query, 
+    limit=3, 
+    severity_filter="CRITICAL", 
+    min_cvss=7.0, 
+    score_threshold=0.01,
+    start_date="2026-06-01",
+    end_date="2026-07-02"
+)
 
 # 5. Process search results
 for score_point in results:
     payload = score_point.payload
-    print(f"[{score_point.score:.3f}] {payload['cve_id']} | Severity: {payload['severity']} | CVSS: {payload['cvss_score']}")
+    print(f"[{score_point.score:.3f}] {payload['cve_id']} | Severity: {payload['severity']} | CVSS: {payload['cvss_score']} | Published: {payload['published']}")
     print(f"Description: {payload['description']}\n")
 ```
 

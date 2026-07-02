@@ -100,6 +100,20 @@ def perform_search(client):
     else:
         score_threshold = None
 
+    start_date = Prompt.ask(
+        "Filter by Start Date (YYYY-MM-DD or leave empty)",
+        default=""
+    ).strip()
+    if not start_date:
+        start_date = None
+
+    end_date = Prompt.ask(
+        "Filter by End Date (YYYY-MM-DD or leave empty)",
+        default=""
+    ).strip()
+    if not end_date:
+        end_date = None
+
     limit = Prompt.ask("Max results to display", default="5")
     try:
         limit = int(limit)
@@ -111,11 +125,11 @@ def perform_search(client):
     # Perform Search
     with console.status(f"[bold green]Searching using {strategy} strategy...[/bold green]"):
         if strategy == "dense":
-            results = dense_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold)
+            results = dense_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold, start_date=start_date, end_date=end_date)
         elif strategy == "sparse":
-            results = sparse_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold)
+            results = sparse_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold, start_date=start_date, end_date=end_date)
         else:
-            results = hybrid_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold)
+            results = hybrid_search(client, query, limit=limit, severity_filter=severity_filter, min_cvss=min_cvss, score_threshold=score_threshold, start_date=start_date, end_date=end_date)
             
     if not results:
         console.print("[yellow]No matching vulnerability records found.[/yellow]")
@@ -129,6 +143,10 @@ def perform_search(client):
         title_str += f", Min CVSS: {min_cvss:.1f}"
     if score_threshold is not None:
         title_str += f", Min Score: {score_threshold}"
+    if start_date:
+        title_str += f", Start: {start_date}"
+    if end_date:
+        title_str += f", End: {end_date}"
     title_str += ")"
     
     table = Table(title=title_str, expand=True)
