@@ -106,6 +106,14 @@ def parse_cve_records(raw_data):
                 severity = "LOW"
 
         published = cve.get("published", "")
+        published_timestamp = 0.0
+        if published:
+            try:
+                clean_str = published.replace("Z", "")
+                dt = datetime.fromisoformat(clean_str)
+                published_timestamp = dt.timestamp()
+            except Exception:
+                pass
 
         text = f"{cve_id}: {description} (Severity: {severity}, CVSS: {cvss_score})"
 
@@ -116,6 +124,7 @@ def parse_cve_records(raw_data):
                 "severity": severity,
                 "cvss_score": cvss_score,
                 "published": published,
+                "published_timestamp": published_timestamp,
                 "description": description,
             },
         })
