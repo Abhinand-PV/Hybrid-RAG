@@ -64,6 +64,10 @@ def generate_answer(groq_client, query, context_docs):
     return response.choices[0].message.content
 
 def main():
+    """
+    Main entry point for the CVE intelligence application.
+    Initializes Qdrant, ingests data if needed, and runs a sample query.
+    """
     print(f"Initializing Qdrant (persistent at {QDRANT_PATH})...")
     client = QdrantClient(path=QDRANT_PATH)
 
