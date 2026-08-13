@@ -3,6 +3,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-red.svg)](https://qdrant.tech/)
 [![LLM](https://img.shields.io/badge/LLM-Groq_Llama_3.3-orange.svg)](https://groq.com/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A powerful, production-ready Hybrid RAG (Retrieval-Augmented Generation) pipeline designed to ingest, index, search, and analyze security vulnerabilities (CVEs) from the National Vulnerability Database (NVD).
 
