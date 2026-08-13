@@ -117,9 +117,6 @@ def main():
         compare_strategies(client, query)
     
     print("\n\nGenerating vulnerability report with Groq...")
-    print("API key exists:", bool(GROQ_API_KEY))
-    print("Starts with gsk_:", GROQ_API_KEY.startswith("gsk_"))
-    print("Length:", len(GROQ_API_KEY))
     groq_client = Groq(api_key=GROQ_API_KEY)
     query = "What are the most critical vulnerabilities?"
     results = hybrid_search(client, query, severity_filter="CRITICAL")
