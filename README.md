@@ -180,3 +180,10 @@ You can adjust the models, collection names, and parameters inside [config.py](f
 *   `CVE_CACHE_FILE`: Name of the JSON cache file for raw NVD API data (`cve_cache.json`).
 *   `CACHE_EXPIRY_HOURS`: Cache expiration time in hours (`24`).
 *   `QDRANT_PATH`: Local storage folder path for Qdrant persistence (`./qdrant_db`).
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
