@@ -1,12 +1,13 @@
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List
 import requests
 import time
 from config import NVD_API_URL, CVE_CACHE_FILE, CACHE_EXPIRY_HOURS
 
 
-def fetch_cves(results_per_page=50, force_refresh=False, days=90):
+def fetch_cves(results_per_page: int = 50, force_refresh: bool = False, days: int = 90) -> Dict[str, Any]:
     """Fetch recent CVEs from the NVD API with local caching."""
     # Check cache first
     cache_exists = os.path.exists(CVE_CACHE_FILE)
@@ -27,7 +28,7 @@ def fetch_cves(results_per_page=50, force_refresh=False, days=90):
             print(f"Warning: Failed to read cache file ({e}). Re-fetching...")
 
     # Calculate dynamic dates (UTC)
-    end_date = datetime.utcnow()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
     
     params = {
@@ -70,7 +71,7 @@ def fetch_cves(results_per_page=50, force_refresh=False, days=90):
         raise e
 
 
-def parse_cve_records(raw_data):
+def parse_cve_records(raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Parse NVD API response into documents with metadata."""
     documents = []
     vulnerabilities = raw_data.get("vulnerabilities", [])
