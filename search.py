@@ -1,9 +1,10 @@
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from qdrant_client import QdrantClient, models
 from config import COLLECTION_NAME, DENSE_MODEL, SPARSE_MODEL
 
 
-def create_collection(client, force_recreate=False):
+def create_collection(client: QdrantClient, force_recreate: bool = False) -> bool:
     """Create a Qdrant collection with both dense and sparse vectors if it doesn't exist."""
     if force_recreate:
         try:
@@ -33,7 +34,7 @@ def create_collection(client, force_recreate=False):
     print(f"Created collection '{COLLECTION_NAME}' successfully.")
     return True
 
-def ingest_documents(client, documents, batch_size=100):
+def ingest_documents(client: QdrantClient, documents: List[Dict[str, Any]], batch_size: int = 100) -> None:
     """Ingest documents in batches with both dense and sparse vectors."""
     points = []
     for i, doc in enumerate(documents):
@@ -61,7 +62,12 @@ def ingest_documents(client, documents, batch_size=100):
 
     print(f"Successfully ingested all {total_points} documents into '{COLLECTION_NAME}'.")
 
-def build_qdrant_filter(severity_filter=None, min_cvss=None, start_date=None, end_date=None):
+def build_qdrant_filter(
+    severity_filter: Optional[str] = None,
+    min_cvss: Optional[float] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Optional[models.Filter]:
     """Build a Qdrant Filter object based on severity, CVSS score constraints, and date ranges."""
     must_conditions = []
     if severity_filter:
@@ -118,7 +124,16 @@ def build_qdrant_filter(severity_filter=None, min_cvss=None, start_date=None, en
     return None
 
 
-def dense_search(client, query, limit=5, severity_filter=None, min_cvss=None, score_threshold=None, start_date=None, end_date=None):
+def dense_search(
+    client: QdrantClient,
+    query: str,
+    limit: int = 5,
+    severity_filter: Optional[str] = None,
+    min_cvss: Optional[float] = None,
+    score_threshold: Optional[float] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> List[models.ScoredPoint]:
     """Search using only dense (semantic) vectors."""
     query_filter = build_qdrant_filter(severity_filter, min_cvss, start_date, end_date)
     response = client.query_points(
@@ -135,7 +150,16 @@ def dense_search(client, query, limit=5, severity_filter=None, min_cvss=None, sc
     return points
 
 
-def sparse_search(client, query, limit=5, severity_filter=None, min_cvss=None, score_threshold=None, start_date=None, end_date=None):
+def sparse_search(
+    client: QdrantClient,
+    query: str,
+    limit: int = 5,
+    severity_filter: Optional[str] = None,
+    min_cvss: Optional[float] = None,
+    score_threshold: Optional[float] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> List[models.ScoredPoint]:
     """Search using only sparse (BM25) vectors."""
     query_filter = build_qdrant_filter(severity_filter, min_cvss, start_date, end_date)
     response = client.query_points(
@@ -152,7 +176,16 @@ def sparse_search(client, query, limit=5, severity_filter=None, min_cvss=None, s
     return points
 
 
-def hybrid_search(client, query, limit=5, severity_filter=None, min_cvss=None, score_threshold=None, start_date=None, end_date=None):
+def hybrid_search(
+    client: QdrantClient,
+    query: str,
+    limit: int = 5,
+    severity_filter: Optional[str] = None,
+    min_cvss: Optional[float] = None,
+    score_threshold: Optional[float] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> List[models.ScoredPoint]:
     """Search using hybrid dense + sparse with RRF fusion."""
     query_filter = build_qdrant_filter(severity_filter, min_cvss, start_date, end_date)
 
